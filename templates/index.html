@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SOC-SIEM | Centro de Operações de Segurança</title>
+  <meta name="description" content="Dashboard SOC pessoal com SIEM caseiro — monitoramento em tempo real." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+
+<body>
+
+  <!-- ═══════════════════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════════════════════ -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+        <path d="M14 2L3 7v8c0 6.075 4.686 11.755 11 13 6.314-1.245 11-6.925 11-13V7L14 2z" fill="url(#shield-grad)"
+          stroke="#1e90ff44" stroke-width="0.5" />
+        <path d="M10 14l3 3 6-6" stroke="#00d4ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+        <defs>
+          <linearGradient id="shield-grad" x1="3" y1="2" x2="25" y2="28" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#0d2a52" />
+            <stop offset="100%" stop-color="#071525" />
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="logo-text">
+        <span class="logo-main">SOC-SIEM</span>
+        <span class="logo-ver">v1.0</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="nav-item active" href="#" data-panel="dashboard">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <rect x="2" y="2" width="7" height="7" rx="1.5" />
+          <rect x="11" y="2" width="7" height="7" rx="1.5" />
+          <rect x="2" y="11" width="7" height="7" rx="1.5" />
+          <rect x="11" y="11" width="7" height="7" rx="1.5" />
+        </svg>
+        <span>Overview</span>
+      </a>
+      <a class="nav-item" href="#" data-panel="alerts">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M10 2a6 6 0 016 6v3l2 3H2l2-3V8a6 6 0 016-6zM8 16a2 2 0 004 0" />
+        </svg>
+        <span>Alertas</span>
+        <span class="nav-badge" id="nav-alert-count">0</span>
+      </a>
+      <a class="nav-item" href="#" data-panel="incidents">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <circle cx="10" cy="10" r="8" />
+          <path d="M10 6v5l3 3" />
+        </svg>
+        <span>Incidentes</span>
+      </a>
+      <a class="nav-item" href="#" data-panel="feed">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 5h14M3 10h10M3 15h7" />
+        </svg>
+        <span>Event Log</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <button class="btn-simulate-side" onclick="openModal()" id="btn-sim-side">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path
+            d="M10 3v4M10 13v4M3 10h4M13 10h4M5.636 5.636l2.828 2.828M11.536 11.536l2.828 2.828M5.636 14.364l2.828-2.828M11.536 8.464l2.828-2.828" />
+        </svg>
+        Simular Ataque
+      </button>
+      <button class="btn-reset-side" onclick="resetDemo()">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M4 4v5h5" />
+          <path d="M4.5 9A7.5 7.5 0 1016 10" />
+        </svg>
+        Resetar Demo
+      </button>
+    </div>
+  </aside>
+
+  <!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+════════════════════════════════════════════════════════════ -->
+  <div class="content-wrap">
+
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="page-title" id="page-title">Overview</h1>
+        <span class="breadcrumb">SOC-SIEM / <span id="breadcrumb-current">Dashboard</span></span>
+      </div>
+      <div class="topbar-right">
+        <div class="siem-status">
+          <span class="live-pulse"></span>
+          <span class="live-label">MONITORANDO</span>
+        </div>
+        <div class="clock-block">
+          <span class="clock-label">UTC−3</span>
+          <span class="clock-time" id="clock"></span>
+        </div>
+      </div>
+    </header>
+
+    <!-- ── PANEL: OVERVIEW ──────────────────────────────────────── -->
+    <section class="panel active" id="panel-dashboard">
+
+      <!-- KPI ROW -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-blue">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="10" cy="10" r="7" />
+              <path d="M10 7v3l2 2" />
+            </svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-value" id="stat-events">—</span>
+            <span class="kpi-label">Total de Eventos</span>
+          </div>
+          <div class="kpi-trend" id="kpi-eps"><span class="trend-num" id="stat-eps">—</span><span
+              class="trend-label">/min</span></div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-orange">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M10 3l2.5 5 5.5.8-4 3.9.95 5.5L10 15.5l-4.95 2.7.95-5.5L2 8.8l5.5-.8z" />
+            </svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-value" id="stat-alerts">—</span>
+            <span class="kpi-label">Alertas Ativos</span>
+          </div>
+          <div class="kpi-sparkline" id="sparkline-alerts"></div>
+        </div>
+
+        <div class="kpi-card kpi-danger">
+          <div class="kpi-icon kpi-red">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M10 2L3 7v8c0 4.5 3.5 8 7 9 3.5-1 7-4.5 7-9V7L10 2z" />
+            </svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-value" id="stat-incidents">—</span>
+            <span class="kpi-label">Incidentes Abertos</span>
+          </div>
+          <span class="kpi-tag" id="kpi-crit-tag"></span>
+        </div>
+
+        <div class="kpi-card">
+          <div class="kpi-icon kpi-purple">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5">
+              <path d="M3 17l4-8 4 5 3-3 3 6" />
+            </svg>
+          </div>
+          <div class="kpi-body">
+            <span class="kpi-value" id="stat-top-ip">—</span>
+            <span class="kpi-label">IP Mais Ativo</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- CHARTS ROW -->
+      <div class="charts-row">
+        <!-- Timeline chart -->
+        <div class="chart-card chart-wide">
+          <div class="chart-header">
+            <span class="chart-title">Eventos por Minuto</span>
+            <span class="chart-subtitle" id="chart-ts-subtitle">últimos 15min</span>
+          </div>
+          <div class="chart-body" style="height:180px; position:relative;">
+            <canvas id="chart-timeline"></canvas>
+          </div>
+        </div>
+
+        <!-- Attack breakdown doughnut -->
+        <div class="chart-card chart-narrow">
+          <div class="chart-header">
+            <span class="chart-title">Distribuição de Ataques</span>
+          </div>
+          <div class="chart-body"
+            style="height:180px; position:relative; display:flex; align-items:center; justify-content:center;">
+            <canvas id="chart-attacks"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- ALERTS TABLE + TOP IPs row -->
+      <div class="bottom-row">
+        <!-- Alerts mini-table -->
+        <div class="table-card table-wide">
+          <div class="table-card-header">
+            <span class="chart-title">Alertas Recentes</span>
+            <span class="badge-pill" id="alerts-count">0</span>
+          </div>
+          <div class="table-scroll">
+            <table class="data-table" id="alerts-table">
+              <thead>
+                <tr>
+                  <th>SEV</th>
+                  <th>Regra</th>
+                  <th>IP Origem</th>
+                  <th>Tática MITRE</th>
+                  <th>Status</th>
+                  <th>Ação</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-body">
+                <tr>
+                  <td colspan="6" class="empty-row">Sem alertas</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Top IPs side panel -->
+        <div class="table-card table-narrow">
+          <div class="table-card-header">
+            <span class="chart-title">Top Atacantes</span>
+          </div>
+          <div class="top-ips-list" id="top-ips"></div>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ── PANEL: ALERTS ────────────────────────────────────────── -->
+    <section class="panel" id="panel-alerts">
+      <div class="table-card" style="margin:0">
+        <div class="table-card-header">
+          <span class="chart-title">Todos os Alertas</span>
+          <span class="badge-pill" id="all-alerts-count">0</span>
+        </div>
+        <div class="table-scroll" style="max-height: calc(100vh - 180px)">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Severidade</th>
+                <th>Regra</th>
+                <th>IP Origem</th>
+                <th>Tática MITRE</th>
+                <th>Técnica MITRE</th>
+                <th>Timestamp</th>
+                <th>Status</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="all-alerts-body">
+              <tr>
+                <td colspan="8" class="empty-row">Sem alertas</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── PANEL: INCIDENTS ─────────────────────────────────────── -->
+    <section class="panel" id="panel-incidents">
+      <div class="incidents-grid" id="incidents-grid">
+        <p class="empty-msg">Nenhum incidente registrado.</p>
+      </div>
+    </section>
+
+    <!-- ── PANEL: EVENT LOG ─────────────────────────────────────── -->
+    <section class="panel" id="panel-feed">
+      <div class="table-card" style="margin:0">
+        <div class="table-card-header">
+          <span class="chart-title">Live Event Log</span>
+          <span class="live-dot-badge"><span class="live-pulse small"></span> STREAMING</span>
+        </div>
+        <div class="feed-container font-mono" id="event-feed">
+          <p class="empty-msg">Aguardando eventos…</p>
+        </div>
+      </div>
+    </section>
+
+  </div><!-- /content-wrap -->
+
+  <!-- ═══════════════════════════════════════════════════════════
+     SIMULATE MODAL
+════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="modal" onclick="closeModal(event)">
+    <div class="modal-box">
+      <div class="modal-head">
+        <span class="modal-title">Simular Cenário de Ataque</span>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <p class="modal-sub">Escolha um cenário para gerar logs sintéticos e acionar o motor de detecção.</p>
+      <div class="scenario-list">
+        <button class="scenario-item" onclick="simulate('ssh')">
+          <div class="sc-icon sc-yellow">🔑</div>
+          <div class="sc-info"><strong>SSH Brute-Force</strong><span>Força bruta em login SSH • T1110.001</span></div>
+          <span class="sc-sev sev-HIGH">HIGH</span>
+        </button>
+        <button class="scenario-item" onclick="simulate('web')">
+          <div class="sc-icon sc-blue">🌐</div>
+          <div class="sc-info"><strong>Web Attack</strong><span>SQLi, XSS, Path Traversal • T1190</span></div>
+          <span class="sc-sev sev-HIGH">HIGH</span>
+        </button>
+        <button class="scenario-item" onclick="simulate('mqtt')">
+          <div class="sc-icon sc-cyan">📡</div>
+          <div class="sc-info"><strong>MQTT Anomaly</strong><span>Tópicos suspeitos em IoT • T1210</span></div>
+          <span class="sc-sev sev-MEDIUM">MED</span>
+        </button>
+        <button class="scenario-item" onclick="simulate('portscan')">
+          <div class="sc-icon sc-purple">🔍</div>
+          <div class="sc-info"><strong>Port Scan</strong><span>Varredura SYN • T1046</span></div>
+          <span class="sc-sev sev-MEDIUM">MED</span>
+        </button>
+        <button class="scenario-item scenario-all" onclick="simulate('all')">
+          <div class="sc-icon sc-red">💥</div>
+          <div class="sc-info"><strong>Ataque Total</strong><span>Todos os cenários simultâneos</span></div>
+          <span class="sc-sev sev-CRITICAL">CRIT</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════════════════
+     INCIDENT REPORT MODAL
+════════════════════════════════════════════════════════════ -->
+  <div class="modal-overlay" id="incident-modal" onclick="closeIncidentModal(event)">
+    <div class="modal-box modal-xl">
+      <div class="modal-head">
+        <span class="modal-title" id="incident-title">Relatório de Incidente</span>
+        <button class="modal-close" onclick="closeIncidentModal()">✕</button>
+      </div>
+      <pre id="incident-report" class="report-pre"></pre>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <script src="/static/js/dashboard.js"></script>
+</body>
+
+</html>
